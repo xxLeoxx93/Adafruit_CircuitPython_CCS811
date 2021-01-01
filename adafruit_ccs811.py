@@ -195,32 +195,6 @@ class CCS811:
         self._update_data()
         return self._eco2
 
-    @property
-    def temperature(self):
-        """
-        .. deprecated:: 1.1.5
-           Hardware support removed by vendor
-
-        Temperature based on optional thermistor in Celsius."""
-        buf = bytearray(5)
-        buf[0] = _NTC
-        with self.i2c_device as i2c:
-            i2c.write_then_readinto(buf, buf, out_end=1, in_start=1)
-
-        vref = (buf[1] << 8) | buf[2]
-        vntc = (buf[3] << 8) | buf[4]
-
-        # From ams ccs811 app note 000925
-        # https://download.ams.com/content/download/9059/13027/version/1/file/CCS811_Doc_cAppNote-Connecting-NTC-Thermistor_AN000372_v1..pdf
-        rntc = float(vntc) * _REF_RESISTOR / float(vref)
-
-        ntc_temp = math.log(rntc / 10000.0)
-        ntc_temp /= 3380.0
-        ntc_temp += 1.0 / (25 + 273.15)
-        ntc_temp = 1.0 / ntc_temp
-        ntc_temp -= 273.15
-        return ntc_temp - self.temp_offset
-
     def set_environmental_data(self, humidity, temperature):
         """Set the temperature and humidity used when computing eCO2 and TVOC values.
 
