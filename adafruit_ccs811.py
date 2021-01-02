@@ -42,7 +42,7 @@ from adafruit_register import i2c_bit
 from adafruit_register import i2c_bits
 
 __version__ = "0.0.0-auto.0"
-__repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_CCS811.git"
+__repo__ = "https://github.com/xxLeoxx93/Adafruit_CircuitPython_CCS811.git"
 
 
 _ALG_RESULT_DATA = const(0x02)
@@ -97,9 +97,6 @@ class CCS811:
     interrupt_enabled = i2c_bit.RWBit(0x01, 3)
     drive_mode = i2c_bits.RWBits(3, 0x01, 4)
 
-    temp_offset = 0.0
-    """Temperature offset."""
-
     def __init__(self, i2c_bus, address=0x5A):
         self.i2c_device = I2CDevice(i2c_bus, address)
 
@@ -108,12 +105,17 @@ class CCS811:
             raise RuntimeError(
                 "Device ID returned is not correct! Please check your wiring."
             )
+        # reset before starting 
+        Print("Reseting")
+        self.reset()
+        time.sleep(10)
+        
         # try to start the app
         buf = bytearray(1)
         buf[0] = 0xF4
         with self.i2c_device as i2c:
             i2c.write(buf, end=1)
-        time.sleep(0.1)
+        time.sleep(10)
 
         # make sure there are no errors and we have entered application mode
         if self.error:
@@ -129,8 +131,8 @@ class CCS811:
 
         self.interrupt_enabled = False
 
-        # default to read every second
-        self.drive_mode = DRIVE_MODE_1SEC
+        # default to read every minute
+        self.drive_mode = DRIVE_MODE_60SEC
 
         self._eco2 = None  # pylint: disable=invalid-name
         self._tvoc = None  # pylint: disable=invalid-name
@@ -194,6 +196,12 @@ class CCS811:
         """Equivalent Carbon Dioxide in parts per million. Clipped to 400 to 8192ppm."""
         self._update_data()
         return self._eco2
+    
+    def set_mode(self, mode):  # change operating mode
+        print("Idle for 20min before changing to new mode")
+        self.drive_mode = DRIVE_MODE_IDLE
+        time.sleep(1200)
+        self.drive_mode = mode
 
     def set_environmental_data(self, humidity, temperature):
         """Set the temperature and humidity used when computing eCO2 and TVOC values.
